@@ -4,7 +4,7 @@ import { createFacebookEvent } from "@/lib/facebook";
 import { logFacebookEvent } from "@/lib/db";
 
 const access_token = process.env.FACEBOOK_ACCESS_TOKEN;
-const pixel_id = process.env.FACEBOOK_PIXEL_ID;
+const pixel_id = process.env.FACEBOOK_PIXEL_ID || process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
 const test_event_code = process.env.FACEBOOK_TEST_EVENT_CODE;
 
 if (access_token) {
