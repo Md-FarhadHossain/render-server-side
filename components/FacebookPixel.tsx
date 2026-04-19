@@ -9,22 +9,32 @@ type FacebookPixelProps = {
 export default function FacebookPixel({ pixelId }: FacebookPixelProps) {
   return (
     <>
+      {/* Step 1: Immediately stub the fbq function so queued calls before the
+          script loads are not lost. This runs synchronously on the page. */}
+      <Script id="fb-pixel-stub" strategy="beforeInteractive">
+        {`
+          window.fbq = window.fbq || function() {
+            (window.fbq.q = window.fbq.q || []).push(arguments);
+          };
+          window._fbq = window._fbq || window.fbq;
+          window.fbq.loaded = true;
+          window.fbq.version = '2.0';
+          window.fbq.queue = window.fbq.q || [];
+        `}
+      </Script>
+
+      {/* Step 2: Load the real fbevents.js. Once it loads it will flush the
+          queued calls above, then we dispatch 'fbqReady' so the hook knows
+          the pixel is live and any pending browser events can fire. */}
       <Script
         id="fb-pixel"
         strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-            !function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${pixelId}');
-            fbq('track', 'PageView');
-          `,
+        src="https://connect.facebook.net/en_US/fbevents.js"
+        onLoad={() => {
+          window.fbq('init', '${pixelId}');
+          window.fbq('track', 'PageView');
+          // Signal to useFacebookTrack that the pixel is fully ready
+          window.dispatchEvent(new Event('fbqReady'));
         }}
       />
       <noscript>
