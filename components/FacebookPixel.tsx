@@ -31,10 +31,11 @@ export default function FacebookPixel({ pixelId }: FacebookPixelProps) {
         strategy="afterInteractive"
         src="https://connect.facebook.net/en_US/fbevents.js"
         onLoad={() => {
-          window.fbq('init', '${pixelId}');
-          window.fbq('track', 'PageView');
+          const win = window as any;
+          win.fbq('init', pixelId);
+          win.fbq('track', 'PageView');
           // Signal to useFacebookTrack that the pixel is fully ready
-          window.dispatchEvent(new Event('fbqReady'));
+          win.dispatchEvent(new Event('fbqReady'));
         }}
       />
       <noscript>
