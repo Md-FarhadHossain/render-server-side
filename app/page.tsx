@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useFacebookTrack } from "@/hooks/useFacebookTrack";
 
 export default function CheckoutPage() {
   const { track } = useFacebookTrack();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // We use a ref so we only trigger "InitiateCheckout" once per session, not on every keystroke
+  const initiateCheckoutFired = useRef(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -16,8 +19,25 @@ export default function CheckoutPage() {
     address: "",
   });
 
+  // Example 1: Trigger an event when they just view the page
+  useEffect(() => {
+    track("ViewContent", {
+      content_name: "Premium Subscription Landing Page",
+      content_category: "Checkout",
+    });
+  }, [track]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+    // Example 2: Trigger "InitiateCheckout" as soon as they start typing something
+    if (!initiateCheckoutFired.current) {
+      track(
+        "InitiateCheckout",
+        { value: 99.99, currency: "USD", content_name: "Premium Subscription" }
+      );
+      initiateCheckoutFired.current = true;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,8 +47,7 @@ export default function CheckoutPage() {
     // Simulated API call for payment validation...
     await new Promise((res) => setTimeout(res, 1500));
 
-    // ✅ Fire Facebook CAPI tracking! 
-    // This sends both the Pixel and the Server-Side Event instantly, automatically handling hashing!
+    // Example 3: Fire Facebook CAPI "Purchase" event when they process it! 
     track(
       "Purchase",
       { value: 99.99, currency: "USD", content_name: "Premium Subscription" },
@@ -52,7 +71,7 @@ export default function CheckoutPage() {
           <h2 className="text-3xl font-bold text-white mb-2">Order Complete!</h2>
           <p className="text-indigo-200 mb-8">Thank you for your purchase. We have received your order.</p>
           <button 
-            onClick={() => { setSuccess(false); setFormData({firstName:"", lastName:"", email:"", phone:"", address:""}) }} 
+            onClick={() => { setSuccess(false); setFormData({firstName:"", lastName:"", email:"", phone:"", address:""}); initiateCheckoutFired.current = false; }} 
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 px-4 rounded-xl transition duration-200"
           >
             Buy Again
